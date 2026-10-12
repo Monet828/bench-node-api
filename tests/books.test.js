@@ -39,6 +39,24 @@ test("GET /api/books?q= は大文字小文字を区別しない", async () => {
   });
 });
 
+test("listBooks の q は著者名でも絞り込み、大文字小文字を区別しない", () => {
+  for (const q of ["Tolkien", "tolkien", "TOLKIEN"]) {
+    const result = listBooks(seedBooks(), { q });
+    assert.deepEqual(result.books.map((b) => b.id), [1]);
+  }
+  const murakami = listBooks(seedBooks(), { q: "murakami" });
+  assert.deepEqual(murakami.books.map((b) => b.id), [3, 5]);
+});
+
+test("GET /api/books?q= は著者名で検索できる", async () => {
+  await withApp(async (app) => {
+    for (const q of ["herbert", "HERBERT"]) {
+      const body = await (await app(`/api/books?q=${q}`)).json();
+      assert.ok(body.books.some((b) => b.author === "Frank Herbert"));
+    }
+  });
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });

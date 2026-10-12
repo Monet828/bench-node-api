@@ -8,7 +8,10 @@ export function listBooks(books, query = {}) {
   const q = query.q || null;
   const page = Number(query.page ?? 1);
   const size = Number(query.size ?? 20);
-  const matched = q ? books.filter((b) => b.title.toLowerCase().includes(q.toLowerCase())) : books;
+  const needle = q ? q.toLowerCase() : null;
+  const matched = needle
+    ? books.filter((b) => b.title.toLowerCase().includes(needle) || b.author.toLowerCase().includes(needle))
+    : books;
   const items = matched.slice((page - 1) * size, page * size);
   return { books: items, total: items.length, page };
 }
