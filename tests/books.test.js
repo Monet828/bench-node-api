@@ -32,7 +32,9 @@ test("GET /api/books?q=murakami は著者名で絞り込む", async () => {
   await withApp(async (app) => {
     const res = await app(`/api/books?q=murakami`);
     assert.equal(res.status, 200);
-    assert.deepEqual((await res.json()).books.map((b) => b.id), [3, 5]);
+    const books = (await res.json()).books;
+    assert.deepEqual(books.map((b) => b.id), [3, 5]);
+    assert.ok(books.every((b) => b.author === "Haruki Murakami"));
   });
 });
 
