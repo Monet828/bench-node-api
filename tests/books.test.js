@@ -52,6 +52,19 @@ test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   });
 });
 
+test("POST /api/books は 201 と id 付きの書籍を返す", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Emma", author: "Jane Austen", isbn: "9780141439587", stock: 1 }),
+    });
+    assert.equal(res.status, 201);
+    const body = await res.json();
+    assert.equal(typeof body.id, "number");
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>

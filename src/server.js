@@ -22,6 +22,10 @@ export function createHandler(books = seedBooks()) {
       if (req.method === "GET" && url.pathname === "/api/books") {
         return send(res, 200, listBooks(books, Object.fromEntries(url.searchParams)));
       }
+      if (req.method === "POST" && url.pathname === "/api/books") {
+        // ダミー応答：本文の内容に関わらず固定の書籍を返す（登録はまだしない）。
+        return send(res, 201, { id: 6, title: "Dummy Book", author: "Unknown", isbn: "9780000000000", stock: 0 });
+      }
       const one = url.pathname.match(/^\/api\/books\/(\d+)$/);
       if (req.method === "GET" && one) {
         const book = getBook(books, Number(one[1]));
