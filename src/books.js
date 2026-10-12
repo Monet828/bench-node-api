@@ -18,13 +18,17 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
-/** 書籍を登録して返す。title・author は空でない文字列、isbn は文字列、stock は 0 以上の整数（省略時 0）。 */
+/** 既に登録済みの isbn を登録しようとしたときの例外。 */
+export class DuplicateIsbnError extends Error {}
+
+/** 書籍を登録して返す。isbn が既にあれば DuplicateIsbnError。title・author は空でない文字列、isbn は文字列、stock は 0 以上の整数（省略時 0）。 */
 export function addBook(books, input = {}) {
   const { title, author, isbn, stock = 0 } = input ?? {};
   if (typeof title !== "string" || title === "") throw new RangeError("title は空でない文字列");
   if (typeof author !== "string" || author === "") throw new RangeError("author は空でない文字列");
   if (typeof isbn !== "string" || isbn === "") throw new RangeError("isbn は空でない文字列");
   if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  if (books.some((b) => b.isbn === isbn)) throw new DuplicateIsbnError(isbn);
   const id = books.reduce((max, b) => Math.max(max, b.id), 0) + 1;
   const book = { id, title, author, isbn, stock };
   books.push(book);
