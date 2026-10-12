@@ -1,18 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createServer } from "../src/server.js";
+import { createHandler } from "../src/server.js";
 import { adjustStock, getBook, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
+import { request } from "./helpers/app.js";
 
-async function withServer(fn) {
-  const server = createServer();
-  await new Promise((resolve) => server.listen(0, resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
-  try {
-    await fn(base);
-  } finally {
-    await new Promise((resolve) => server.close(resolve));
-  }
+// 在庫ごとに handler を作り、fetch と同じ形の app(path, init) を渡す（ソケットは使わない。tests/helpers/app.js）。
+async function withApp(fn) {
+  const handler = createHandler();
+  await fn((path, init) => request(handler, path, init));
 }
 
 test("listBooks は全件を返す", () => {
@@ -38,8 +34,8 @@ test("adjustStock は在庫を増減し、0 未満にはしない", () => {
 });
 
 test("GET /api/books は一覧を返す", async () => {
-  await withServer(async (base) => {
-    const res = await fetch(`${base}/api/books`);
+  await withApp(async (app) => {
+    const res = await app(`/api/books`);
     assert.equal(res.status, 200);
     const body = await res.json();
     assert.equal(body.books.length, 5);
@@ -47,19 +43,19 @@ test("GET /api/books は一覧を返す", async () => {
 });
 
 test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
-  await withServer(async (base) => {
-    const ok = await fetch(`${base}/api/books/3`);
+  await withApp(async (app) => {
+    const ok = await app(`/api/books/3`);
     assert.equal(ok.status, 200);
     assert.equal((await ok.json()).title, "Kafka on the Shore");
-    const missing = await fetch(`${base}/api/books/99`);
+    const missing = await app(`/api/books/99`);
     assert.equal(missing.status, 404);
   });
 });
 
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
-  await withServer(async (base) => {
+  await withApp(async (app) => {
     const post = (id, body) =>
-      fetch(`${base}/api/books/${id}/stock`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      app(`/api/books/${id}/stock`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const ok = await post(1, { delta: 2 });
     assert.equal(ok.status, 200);
     assert.equal((await ok.json()).stock, 6);

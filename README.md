@@ -25,5 +25,10 @@ npm test         # 試験（node:test）
 
 - `src/data.js` — 初期データ
 - `src/books.js` — 一覧・取得・在庫の増減
-- `src/server.js` — HTTP の入口（`createServer()` で在庫ごとにサーバーを作る）
-- `tests/` — 試験
+- `src/server.js` — HTTP の入口（`createHandler()` が在庫ごとに要求を処理する関数を作り、`createServer()` がそれでサーバーを作る）
+- `tests/` — 試験。`tests/helpers/app.js` の `request(handler, path, init)` で handler を直接呼ぶ
+
+## 試験の約束
+
+試験はソケットを使わない（listen も `fetch` もしない）。評価の sandbox は localhost への通信を禁じているため。
+HTTP の振る舞いを確かめるときは、`createHandler()` の handler を `tests/helpers/app.js` の `request()` で呼ぶ（`fetch` と同じ形で、`{ status, headers, text(), json() }` を返す）。

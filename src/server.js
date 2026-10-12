@@ -14,7 +14,7 @@ async function readJson(req) {
   return JSON.parse(text);
 }
 
-/** 要求を処理する関数を作る。books はこのサーバーだけの在庫。 */
+/** 要求を処理する関数を作る。books はこのサーバーだけの在庫。試験はこの関数を直接呼ぶ（tests/helpers/app.js）。 */
 export function createHandler(books = seedBooks()) {
   return async function handle(req, res) {
     const url = new URL(req.url, "http://localhost");
@@ -50,7 +50,7 @@ export function createHandler(books = seedBooks()) {
   };
 }
 
-/** HTTP サーバーを作る（listen はしない）。試験では port 0 で listen する。 */
+/** HTTP サーバーを作る（listen はしない）。 */
 export function createServer(books = seedBooks()) {
   return http.createServer(createHandler(books));
 }
