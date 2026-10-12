@@ -18,6 +18,11 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
+/** isbn が一致する書籍を返す。無ければ null。 */
+export function findByIsbn(books, isbn) {
+  return books.find((b) => b.isbn === isbn) ?? null;
+}
+
 /** 新しい書籍を一意の id（既存の最大 id + 1）で books に追加して返す。title は必須、stock の既定は 0。 */
 export function addBook(books, data = {}) {
   if (typeof data.title !== "string" || data.title === "") throw new RangeError("title は必須");

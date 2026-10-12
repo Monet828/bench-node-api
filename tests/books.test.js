@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { addBook, adjustStock, getBook, listBooks } from "../src/books.js";
+import { addBook, adjustStock, findByIsbn, getBook, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -78,6 +78,35 @@ test("POST /api/books は 201 で登録し、ID と一覧で取得できる", as
     assert.ok(list.books.some((b) => b.id === created.id));
     assert.equal((await post(JSON.stringify({ author: "x" }))).status, 400);
     assert.equal((await post("{")).status, 400);
+  });
+});
+
+test("findByIsbn は isbn で一致する書籍を返し、無ければ null", () => {
+  const books = seedBooks();
+  assert.equal(findByIsbn(books, "9780441172719").id, 2);
+  assert.equal(findByIsbn(books, "000"), null);
+});
+
+test("POST /api/books は入力不備で 400、ISBN 重複で 409 を返し、保存しない", async () => {
+  await withApp(async (app) => {
+    const post = (body) => app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const ok = { title: "T", author: "A", isbn: "111", stock: 1 };
+    for (const bad of [
+      { ...ok, title: "" },
+      { ...ok, author: undefined },
+      { ...ok, isbn: 5 },
+      { ...ok, stock: -1 },
+      { ...ok, stock: 1.5 },
+      { ...ok, stock: "2" },
+      null,
+    ]) {
+      assert.equal((await post(bad)).status, 400);
+    }
+    assert.equal((await post({ ...ok, isbn: "9780441172719" })).status, 409);
+    assert.equal((await (await app(`/api/books`)).json()).books.length, 5);
+    assert.equal((await post(ok)).status, 201);
+    assert.equal((await post(ok)).status, 409);
+    assert.equal((await (await app(`/api/books`)).json()).books.length, 6);
   });
 });
 

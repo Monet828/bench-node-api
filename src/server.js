@@ -1,6 +1,6 @@
 import http from "node:http";
 import { seedBooks } from "./data.js";
-import { addBook, adjustStock, getBook, listBooks } from "./books.js";
+import { addBook, adjustStock, findByIsbn, getBook, listBooks } from "./books.js";
 
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
@@ -29,6 +29,17 @@ export function createHandler(books = seedBooks()) {
         } catch {
           return send(res, 400, { error: "invalid_json" });
         }
+        const isText = (v) => typeof v === "string" && v.trim() !== "";
+        if (body === null || typeof body !== "object" || Array.isArray(body)) {
+          return send(res, 400, { error: "invalid_book", message: "本文はオブジェクト" });
+        }
+        if (!isText(body.title) || !isText(body.author) || !isText(body.isbn)) {
+          return send(res, 400, { error: "invalid_book", message: "title, author, isbn は空でない文字列" });
+        }
+        if (body.stock !== undefined && (!Number.isInteger(body.stock) || body.stock < 0)) {
+          return send(res, 400, { error: "invalid_book", message: "stock は 0 以上の整数" });
+        }
+        if (findByIsbn(books, body.isbn)) return send(res, 409, { error: "duplicate_isbn" });
         try {
           return send(res, 201, addBook(books, body));
         } catch (error) {
