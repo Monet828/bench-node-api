@@ -83,6 +83,26 @@ test("POST /api/books は isbn が重複すると 409", async () => {
   });
 });
 
+test("POST /api/books rejects invalid stock and missing fields with 400", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const valid = { title: "Neuromancer", author: "William Gibson", isbn: "9780441569595" };
+    for (const stock of [-1, 1.5, "3"]) {
+      const res = await post({ ...valid, stock });
+      assert.equal(res.status, 400);
+      assert.equal((await res.json()).error, "invalid_book");
+    }
+    for (const field of ["title", "author", "isbn"]) {
+      const { [field]: _omitted, ...rest } = valid;
+      const res = await post(rest);
+      assert.equal(res.status, 400);
+    }
+    const list = await (await app(`/api/books`)).json();
+    assert.equal(list.books.length, 5);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>
