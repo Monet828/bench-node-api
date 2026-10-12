@@ -23,6 +23,12 @@ test("listBooks は q で書名を絞り込む", () => {
   assert.deepEqual(result.books.map((b) => b.id), [1]);
 });
 
+test("listBooks keeps total count regardless of pagination", () => {
+  const result = listBooks(seedBooks(), { page: 1, size: 2 });
+  assert.equal(result.books.length, 2);
+  assert.equal(result.total, 5);
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
