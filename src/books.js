@@ -21,8 +21,8 @@ export function getBook(books, id) {
 /** 書籍を登録して返す。id は最大の id + 1。title・author・isbn が文字列で stock が 0 以上の整数でなければ RangeError。 */
 export function addBook(books, input = {}) {
   const { title, author, isbn, stock } = input;
-  if (![title, author, isbn].every((v) => typeof v === "string" && v !== "")) throw new RangeError("title・author・isbn は文字列");
-  if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  if (![title, author, isbn].every((v) => typeof v === "string" && v !== "")) throw new RangeError("title, author and isbn is required as non-empty strings");
+  if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock must be an integer of 0 or more");
   const book = { id: Math.max(0, ...books.map((b) => b.id)) + 1, title, author, isbn, stock };
   books.push(book);
   return book;

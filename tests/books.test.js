@@ -71,6 +71,25 @@ test("POST /api/books は不正な本文で 400", async () => {
   });
 });
 
+test("POST /api/books は必須項目が無ければ 400 で is required を返す", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "x", stock: 1 }) });
+    assert.equal(res.status, 400);
+    assert.match((await res.json()).message, /is required/);
+  });
+});
+
+test("POST /api/books は stock が不正なら 400 で stock must be を返す", async () => {
+  await withApp(async (app) => {
+    for (const stock of [-1, 1.5, "3"]) {
+      const input = { title: "x", author: "y", isbn: "z", stock };
+      const res = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+      assert.equal(res.status, 400);
+      assert.match((await res.json()).message, /stock must be/);
+    }
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>
