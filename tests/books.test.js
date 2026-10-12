@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { adjustStock, getBook, listBooks } from "../src/books.js";
+import { addBook, adjustStock, getBook, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -49,6 +49,35 @@ test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
     assert.equal((await ok.json()).title, "Kafka on the Shore");
     const missing = await app(`/api/books/99`);
     assert.equal(missing.status, 404);
+  });
+});
+
+test("addBook は一意の id を付けて追加する", () => {
+  const books = seedBooks();
+  const a = addBook(books, { title: "A" });
+  const b = addBook(books, { title: "B", stock: 2 });
+  assert.equal(a.id, 6);
+  assert.equal(b.id, 7);
+  assert.equal(a.stock, 0);
+  assert.equal(books.length, 7);
+  assert.throws(() => addBook(books, {}), RangeError);
+});
+
+test("POST /api/books は 201 で登録し、ID と一覧で取得できる", async () => {
+  await withApp(async (app) => {
+    const post = (body) => app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body });
+    const res = await post(JSON.stringify({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 1 }));
+    assert.equal(res.status, 201);
+    const created = await res.json();
+    assert.equal(created.title, "Neuromancer");
+    assert.equal(typeof created.id, "number");
+    const got = await app(`/api/books/${created.id}`);
+    assert.equal(got.status, 200);
+    assert.deepEqual(await got.json(), created);
+    const list = await (await app(`/api/books`)).json();
+    assert.ok(list.books.some((b) => b.id === created.id));
+    assert.equal((await post(JSON.stringify({ author: "x" }))).status, 400);
+    assert.equal((await post("{")).status, 400);
   });
 });
 
