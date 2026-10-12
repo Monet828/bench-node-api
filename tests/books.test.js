@@ -52,6 +52,21 @@ test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   });
 });
 
+test("POST /api/books は書籍を登録して 201 を返し、GET で取得できる", async () => {
+  await withApp(async (app) => {
+    const input = { title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 };
+    const res = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    assert.equal(res.status, 201);
+    const created = await res.json();
+    assert.deepEqual(created, { id: 6, ...input });
+    const one = await app(`/api/books/${created.id}`);
+    assert.equal(one.status, 200);
+    assert.deepEqual(await one.json(), created);
+    const list = await (await app(`/api/books`)).json();
+    assert.ok(list.books.some((b) => b.id === created.id));
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>
