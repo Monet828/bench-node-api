@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { adjustStock, getBook, listBooks } from "../src/books.js";
+import { adjustStock, getBook, getTotalBooksCount, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -21,6 +21,11 @@ test("listBooks は全件を返す", () => {
 test("listBooks は q で書名を絞り込む", () => {
   const result = listBooks(seedBooks(), { q: "Hobbit" });
   assert.deepEqual(result.books.map((b) => b.id), [1]);
+});
+
+test("getTotalBooksCount は q に合う全件数を返す", () => {
+  assert.equal(getTotalBooksCount(seedBooks()), 5);
+  assert.equal(getTotalBooksCount(seedBooks(), "Hobbit"), 1);
 });
 
 test("listBooks keeps total count regardless of pagination", () => {
