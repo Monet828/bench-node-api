@@ -67,6 +67,18 @@ test("POST /api/books は書籍を登録して 201 を返し、不正なら 400"
   });
 });
 
+test("POST /api/books は登録済みの ISBN なら 409 を返す", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const first = await post({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595" });
+    assert.equal(first.status, 201);
+    const dup = await post({ title: "Another", author: "Someone", isbn: "9780441569595" });
+    assert.equal(dup.status, 409);
+    assert.equal((await (await app(`/api/books`)).json()).total, 6);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>

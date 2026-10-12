@@ -29,6 +29,9 @@ export function createHandler(books = seedBooks()) {
         } catch {
           return send(res, 400, { error: "invalid_json" });
         }
+        if (typeof body?.isbn === "string" && body.isbn !== "" && books.some((b) => b.isbn === body.isbn)) {
+          return send(res, 409, { error: "duplicate_isbn" });
+        }
         try {
           return send(res, 201, addBook(books, body));
         } catch (error) {
