@@ -30,6 +30,15 @@ test("listBooks は /total がページング前の全件数を返す（基本�
   assert.equal(result.page, 2);
 });
 
+test("listBooks の total は q で絞り込んだ後・ページング前の件数", () => {
+  const all = seedBooks();
+  const q = all[0].title.slice(0, 3);
+  const expected = all.filter((b) => b.title.includes(q)).length;
+  const result = listBooks(all, { q, page: 1, size: 1 });
+  assert.equal(result.books.length, 1);
+  assert.equal(result.total, expected);
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
