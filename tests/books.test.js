@@ -42,6 +42,15 @@ test("GET /api/books は一覧を返す", async () => {
   });
 });
 
+test("GET /api/books?q=hobbit は大文字小文字を区別せず書名で検索する", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books?q=hobbit`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.ok(body.books.some((b) => b.title === "The Hobbit"));
+  });
+});
+
 test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   await withApp(async (app) => {
     const ok = await app(`/api/books/3`);
