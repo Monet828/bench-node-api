@@ -67,6 +67,31 @@ test("POST /api/books は書籍を登録して 201 を返し、GET で取得で�
   });
 });
 
+test("POST /api/books は必須項目の欠落や不正な値で 400 を返す", async () => {
+  await withApp(async (app) => {
+    const valid = { title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 };
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const bad = [
+      {},
+      null,
+      { ...valid, title: undefined },
+      { ...valid, author: undefined },
+      { ...valid, isbn: undefined },
+      { ...valid, stock: undefined },
+      { ...valid, title: "" },
+      { ...valid, author: "  " },
+      { ...valid, isbn: 123 },
+      { ...valid, stock: -1 },
+      { ...valid, stock: 1.5 },
+      { ...valid, stock: "5" },
+    ];
+    for (const body of bad) assert.equal((await post(body)).status, 400, JSON.stringify(body));
+    const list = await (await app(`/api/books`)).json();
+    assert.equal(list.total, 5);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>

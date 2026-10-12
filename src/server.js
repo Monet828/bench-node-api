@@ -29,6 +29,16 @@ export function createHandler(books = seedBooks()) {
         } catch {
           return send(res, 400, { error: "invalid_json" });
         }
+        const isText = (value) => typeof value === "string" && value.trim() !== "";
+        const valid =
+          body !== null &&
+          typeof body === "object" &&
+          isText(body.title) &&
+          isText(body.author) &&
+          isText(body.isbn) &&
+          Number.isInteger(body.stock) &&
+          body.stock >= 0;
+        if (!valid) return send(res, 400, { error: "invalid_book" });
         return send(res, 201, addBook(books, body));
       }
       const one = url.pathname.match(/^\/api\/books\/(\d+)$/);
