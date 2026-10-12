@@ -42,6 +42,16 @@ test("GET /api/books は一覧を返す", async () => {
   });
 });
 
+test("GET /api/books は size・page を指定しても total にページ前の全件数を返す", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books?size=2&page=2`);
+    const body = await res.json();
+    assert.equal(body.books.length, 2);
+    assert.equal(body.total, 5);
+    assert.equal(body.page, 2);
+  });
+});
+
 test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   await withApp(async (app) => {
     const ok = await app(`/api/books/3`);
