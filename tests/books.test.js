@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { adjustStock, getBook, listBooks } from "../src/books.js";
+import { addBook, adjustStock, getBook, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -61,5 +61,34 @@ test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", as
     assert.equal((await ok.json()).stock, 6);
     const short = await post(2, { delta: -1 });
     assert.equal(short.status, 400);
+  });
+});
+
+test("addBook は一意の id を付けて追加し、その書籍を返す", () => {
+  const books = seedBooks();
+  const a = addBook(books, { title: "A", author: "X", isbn: "1", stock: 2 });
+  const b = addBook(books, { title: "B", author: "Y" });
+  assert.equal(a.id, 6);
+  assert.equal(b.id, 7);
+  assert.equal(b.stock, 0);
+  assert.equal(books.length, 7);
+  assert.equal(getBook(books, 6), a);
+  assert.throws(() => addBook(books, { author: "X" }), RangeError);
+  assert.throws(() => addBook(books, { title: "C", author: "X", stock: -1 }), RangeError);
+});
+
+test("POST /api/books は 201 と id 付きの書籍を返し、不正なら 400", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const ok = await post({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 1 });
+    assert.equal(ok.status, 201);
+    const created = await ok.json();
+    assert.equal(created.id, 6);
+    assert.equal(created.title, "Neuromancer");
+    const got = await app(`/api/books/${created.id}`);
+    assert.equal(got.status, 200);
+    const bad = await post({ author: "nobody" });
+    assert.equal(bad.status, 400);
   });
 });
