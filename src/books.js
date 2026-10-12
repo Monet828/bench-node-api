@@ -18,6 +18,14 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
+/** 新しい書籍を登録し、付けた id ごと返す。id は既存の最大値の次。stock が無ければ 0。 */
+export function addBook(books, input = {}) {
+  const id = books.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+  const book = { id, title: input.title, author: input.author, isbn: input.isbn, stock: input.stock ?? 0 };
+  books.push(book);
+  return book;
+}
+
 /** 在庫を delta だけ増減する。無ければ null。在庫は 0 未満にならない。 */
 export function adjustStock(books, id, delta) {
   const book = getBook(books, id);
