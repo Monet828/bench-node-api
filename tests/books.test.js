@@ -64,6 +64,16 @@ test("POST /api/books は書籍を登録して 201 を返す", async () => {
   });
 });
 
+test("POST /api/books は isbn が重複すると 409", async () => {
+  await withApp(async (app) => {
+    const post = (input) => app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    const first = await post({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 });
+    assert.equal(first.status, 201);
+    const dup = await post({ title: "Count Zero", author: "William Gibson", isbn: "9780441569595", stock: 1 });
+    assert.equal(dup.status, 409);
+  });
+});
+
 test("POST /api/books は不正な本文で 400", async () => {
   await withApp(async (app) => {
     const res = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title: "x" }) });

@@ -18,11 +18,19 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
-/** 書籍を登録して返す。id は最大の id + 1。title・author・isbn が文字列で stock が 0 以上の整数でなければ RangeError。 */
+/** 登録済みの isbn と重複したときの例外。 */
+export class DuplicateIsbnError extends Error {
+  constructor(isbn) {
+    super(`isbn ${isbn} は登録済み`);
+  }
+}
+
+/** 書籍を登録して返す。id は最大の id + 1。title・author・isbn が文字列で stock が 0 以上の整数でなければ RangeError。isbn が重複したら DuplicateIsbnError。 */
 export function addBook(books, input = {}) {
   const { title, author, isbn, stock } = input;
   if (![title, author, isbn].every((v) => typeof v === "string" && v !== "")) throw new RangeError("title・author・isbn は文字列");
   if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  if (books.some((b) => b.isbn === isbn)) throw new DuplicateIsbnError(isbn);
   const book = { id: Math.max(0, ...books.map((b) => b.id)) + 1, title, author, isbn, stock };
   books.push(book);
   return book;
