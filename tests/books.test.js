@@ -63,6 +63,17 @@ test("POST /api/books should create a new book and return 201", async () => {
   });
 });
 
+test("POST /api/books は既存と同じ isbn なら 409 ISBN_DUPLICATE", async () => {
+  await withApp(async (app) => {
+    const input = { title: "Another Hobbit", author: "Someone", isbn: "9780547928227" };
+    const res = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    assert.equal(res.status, 409);
+    assert.equal((await res.json()).error, "ISBN_DUPLICATE");
+    const list = await (await app(`/api/books`)).json();
+    assert.equal(list.books.length, 5);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>
