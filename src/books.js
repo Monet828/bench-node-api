@@ -9,8 +9,9 @@ export function listBooks(books, query = {}) {
   const page = Number(query.page ?? 1);
   const size = Number(query.size ?? 20);
   const matched = q ? books.filter((b) => b.title.includes(q)) : books;
+  const total = matched.length;
   const items = matched.slice((page - 1) * size, page * size);
-  return { books: items, total: items.length, page };
+  return { books: items, total, page };
 }
 
 /** id の書籍を返す。無ければ null。 */
