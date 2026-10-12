@@ -92,3 +92,24 @@ test("POST /api/books は 201 と id 付きの書籍を返し、不正なら 400
     assert.equal(bad.status, 400);
   });
 });
+
+test("POST /api/books は必須フィールドと stock の型・範囲を検証する", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const valid = { title: "T", author: "A", isbn: "1", stock: 1 };
+    for (const field of ["title", "author", "isbn"]) {
+      for (const value of [undefined, "", null, 5]) {
+        const res = await post({ ...valid, [field]: value });
+        assert.equal(res.status, 400, `${field}=${JSON.stringify(value)}`);
+        assert.ok((await res.json()).error);
+      }
+    }
+    for (const value of [undefined, -1, 1.5, "3", null]) {
+      const res = await post({ ...valid, stock: value });
+      assert.equal(res.status, 400, `stock=${JSON.stringify(value)}`);
+    }
+    assert.equal((await post(null)).status, 400);
+    assert.equal((await post({ ...valid, stock: 0 })).status, 201);
+  });
+});

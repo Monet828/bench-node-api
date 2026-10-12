@@ -29,6 +29,15 @@ export function createHandler(books = seedBooks()) {
         } catch {
           return send(res, 400, { error: "invalid_json" });
         }
+        const input = body ?? {};
+        for (const field of ["title", "author", "isbn"]) {
+          if (typeof input[field] !== "string" || input[field] === "") {
+            return send(res, 400, { error: "invalid_book", message: `${field} は空でない文字列` });
+          }
+        }
+        if (!Number.isInteger(input.stock) || input.stock < 0) {
+          return send(res, 400, { error: "invalid_book", message: "stock は 0 以上の整数" });
+        }
         try {
           return send(res, 201, addBook(books, body));
         } catch (error) {
