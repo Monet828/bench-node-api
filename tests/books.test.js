@@ -23,6 +23,20 @@ test("listBooks は q で書名を絞り込む", () => {
   assert.deepEqual(result.books.map((b) => b.id), [1]);
 });
 
+test("listBooks の total はページングに関わらず全件数を返す", () => {
+  for (const [page, size] of [[1, 2], [2, 2], [1, 10]]) {
+    const result = listBooks(seedBooks(), { page, size });
+    assert.equal(result.total, 5);
+  }
+  assert.equal(listBooks(seedBooks(), { page: 1, size: 2 }).books.length, 2);
+});
+
+test("listBooks の total は絞り込み後の全件数を返す", () => {
+  const result = listBooks(seedBooks(), { author: "Haruki Murakami", page: 1, size: 1 });
+  assert.equal(result.books.length, 1);
+  assert.equal(result.total, 2);
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
