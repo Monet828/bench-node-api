@@ -52,6 +52,15 @@ test("GET /api/books はページ分割しても total が全件数を返す", a
   });
 });
 
+test("GET /api/books?size=2&page=1 は total count of all books (全件数) を返す", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books?size=2&page=1`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.total, 5);
+  });
+});
+
 test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   await withApp(async (app) => {
     const ok = await app(`/api/books/3`);
