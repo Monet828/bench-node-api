@@ -18,6 +18,16 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
+/** 書籍を登録して返す。id は最大の id + 1。title・author・isbn が文字列で stock が 0 以上の整数でなければ RangeError。 */
+export function addBook(books, input = {}) {
+  const { title, author, isbn, stock } = input;
+  if (![title, author, isbn].every((v) => typeof v === "string" && v !== "")) throw new RangeError("title・author・isbn は文字列");
+  if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  const book = { id: Math.max(0, ...books.map((b) => b.id)) + 1, title, author, isbn, stock };
+  books.push(book);
+  return book;
+}
+
 /** 在庫を delta だけ増減する。無ければ null。在庫は 0 未満にならない。 */
 export function adjustStock(books, id, delta) {
   const book = getBook(books, id);
