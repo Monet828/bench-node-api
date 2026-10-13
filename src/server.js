@@ -14,6 +14,16 @@ async function readJson(req) {
   return JSON.parse(text);
 }
 
+/** POST /api/books のボディを検べる。問題があればその説明、無ければ null。 */
+function validateNewBook(body) {
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return "ボディはオブジェクト";
+  for (const key of ["title", "author", "isbn"]) {
+    if (typeof body[key] !== "string" || body[key].trim() === "") return `${key} は空でない文字列`;
+  }
+  if (!Number.isInteger(body.stock) || body.stock < 0) return "stock は 0 以上の整数";
+  return null;
+}
+
 /** 要求を処理する関数を作る。books はこのサーバーだけの在庫。試験はこの関数を直接呼ぶ（tests/helpers/app.js）。 */
 export function createHandler(books = seedBooks()) {
   return async function handle(req, res) {
@@ -21,6 +31,25 @@ export function createHandler(books = seedBooks()) {
     try {
       if (req.method === "GET" && url.pathname === "/api/books") {
         return send(res, 200, listBooks(books, Object.fromEntries(url.searchParams)));
+      }
+      if (req.method === "POST" && url.pathname === "/api/books") {
+        let body;
+        try {
+          body = await readJson(req);
+        } catch {
+          return send(res, 400, { error: "invalid_json" });
+        }
+        const invalid = validateNewBook(body);
+        if (invalid) return send(res, 400, { error: "invalid_book", message: invalid });
+        const book = {
+          id: books.reduce((max, b) => Math.max(max, b.id), 0) + 1,
+          title: body.title,
+          author: body.author,
+          isbn: body.isbn,
+          stock: body.stock,
+        };
+        books.push(book);
+        return send(res, 201, book);
       }
       const one = url.pathname.match(/^\/api\/books\/(\d+)$/);
       if (req.method === "GET" && one) {

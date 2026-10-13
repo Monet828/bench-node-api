@@ -63,3 +63,29 @@ test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", as
     assert.equal(short.status, 400);
   });
 });
+
+test("POST /api/books は検証に通れば 201、不正なら 400", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const valid = { title: "T", author: "A", isbn: "123", stock: 0 };
+    const ok = await post(valid);
+    assert.equal(ok.status, 201);
+    assert.equal((await ok.json()).id, 6);
+    const bad = [
+      { ...valid, title: undefined },
+      { ...valid, author: "" },
+      { ...valid, isbn: "  " },
+      { ...valid, title: 5 },
+      { ...valid, stock: undefined },
+      { ...valid, stock: null },
+      { ...valid, stock: -1 },
+      { ...valid, stock: 1.5 },
+      { ...valid, stock: "3" },
+      null,
+    ];
+    for (const body of bad) assert.equal((await post(body)).status, 400, JSON.stringify(body));
+    const invalidJson = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: "{" });
+    assert.equal(invalidJson.status, 400);
+  });
+});
