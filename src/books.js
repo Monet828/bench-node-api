@@ -18,6 +18,19 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
+/** 新しい書籍を登録する。id は既存の最大値 + 1。stock の既定は 0。登録した書籍を返す。 */
+export function createBook(books, input = {}) {
+  for (const key of ["title", "author", "isbn"]) {
+    if (typeof input[key] !== "string" || input[key] === "") throw new RangeError(`${key} は空でない文字列`);
+  }
+  const stock = input.stock ?? 0;
+  if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  const id = books.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+  const book = { id, title: input.title, author: input.author, isbn: input.isbn, stock };
+  books.push(book);
+  return book;
+}
+
 /** 在庫を delta だけ増減する。無ければ null。在庫は 0 未満にならない。 */
 export function adjustStock(books, id, delta) {
   const book = getBook(books, id);
