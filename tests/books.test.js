@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { adjustStock, getBook, listBooks } from "../src/books.js";
+import { adjustStock, createBook, getBook, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -50,6 +50,42 @@ test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
     const missing = await app(`/api/books/99`);
     assert.equal(missing.status, 404);
   });
+});
+
+test("POST /api/books は書籍を登録して 201 を返し、GET で取得できる", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 2 }),
+    });
+    assert.equal(res.status, 201);
+    const created = await res.json();
+    assert.equal(created.id, 6);
+    assert.equal(created.title, "Neuromancer");
+    assert.equal(created.stock, 2);
+    const one = await app(`/api/books/${created.id}`);
+    assert.equal(one.status, 200);
+    assert.deepEqual(await one.json(), created);
+    const list = await (await app(`/api/books`)).json();
+    assert.equal(list.books.length, 6);
+  });
+});
+
+test("POST /api/books は必須項目が無ければ 400", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books`, { method: "POST", body: JSON.stringify({ title: "x" }) });
+    assert.equal(res.status, 400);
+  });
+});
+
+test("createBook は一意の id を付けて追加する", () => {
+  const books = seedBooks();
+  const a = createBook(books, { title: "A", author: "a", isbn: "1" });
+  const b = createBook(books, { title: "B", author: "b", isbn: "2" });
+  assert.notEqual(a.id, b.id);
+  assert.equal(a.stock, 0);
+  assert.equal(books.length, 7);
 });
 
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
