@@ -19,6 +19,7 @@ npm test         # 試験（node:test）
 |---|---|---|
 | `GET /api/books` | 一覧。`q`（書名に含まれる文字列）で絞り込み、`page`（既定 1）・`size`（既定 20）でページに分ける | `200 { books: [...], total, page }`。`total` は条件に合う全件数 |
 | `GET /api/books/:id` | 1 冊 | `200` 書籍、無ければ `404 { error: "not_found" }` |
+| `POST /api/books` | 書籍を登録する。本文 `{ "title", "author", "isbn", "stock"? }`（`stock` は 0 以上の整数、既定 0） | `201` 新しい id を付けた書籍。不正な本文は `400`、ISBN が既存と重なるときは `409 { error: "duplicate_isbn" }` |
 | `POST /api/books/:id/stock` | 在庫を増減する。本文 `{ "delta": 整数 }` | `200` 変更後の書籍。在庫が 0 未満になる・`delta` が整数でないときは `400`、無ければ `404` |
 
 ## 構成

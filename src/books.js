@@ -27,3 +27,21 @@ export function adjustStock(books, id, delta) {
   book.stock += delta;
   return book;
 }
+
+/** ISBN が既存の書籍と重なるときの誤り。 */
+export class DuplicateIsbnError extends Error {}
+
+/** 新しい書籍を追加して返す。title・author・isbn は空でない文字列、stock は 0 以上の整数（省略時 0）。不正なら RangeError、ISBN の重複なら DuplicateIsbnError。 */
+export function createBook(books, data) {
+  if (data === null || typeof data !== "object" || Array.isArray(data)) throw new RangeError("本文はオブジェクト");
+  for (const key of ["title", "author", "isbn"]) {
+    if (typeof data[key] !== "string" || data[key].trim() === "") throw new RangeError(`${key} は空でない文字列`);
+  }
+  const stock = data.stock ?? 0;
+  if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  if (books.some((b) => b.isbn === data.isbn)) throw new DuplicateIsbnError("isbn が重複している");
+  const id = books.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+  const book = { id, title: data.title, author: data.author, isbn: data.isbn, stock };
+  books.push(book);
+  return book;
+}

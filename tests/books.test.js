@@ -63,3 +63,19 @@ test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", as
     assert.equal(short.status, 400);
   });
 });
+
+test("POST /api/books は書籍を登録して 201 を返し、不正なら 400、ISBN 重複なら 409", async () => {
+  await withApp(async (app) => {
+    const post = (body, raw) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: raw ?? JSON.stringify(body) });
+    const ok = await post({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 });
+    assert.equal(ok.status, 201);
+    assert.deepEqual(await ok.json(), { id: 6, title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 });
+    const fetched = await app(`/api/books/6`);
+    assert.equal(fetched.status, 200);
+    assert.equal((await post({ author: "B", isbn: "2" })).status, 400);
+    assert.equal((await post({ title: "A", author: "B", isbn: "2", stock: -1 })).status, 400);
+    assert.equal((await post(null, "{bad")).status, 400);
+    assert.equal((await post({ title: "X", author: "Y", isbn: "9780547928227" })).status, 409);
+  });
+});
