@@ -23,6 +23,22 @@ test("listBooks は q で書名を絞り込む", () => {
   assert.deepEqual(result.books.map((b) => b.id), [1]);
 });
 
+test("listBooks は大文字小文字を区別せず書名と著者名で絞り込む", () => {
+  const ids = (q) => listBooks(seedBooks(), { q }).books.map((b) => b.id);
+  assert.deepEqual(ids("hobbit"), [1]);
+  assert.deepEqual(ids("HOBBIT"), [1]);
+  assert.deepEqual(ids("murakami"), [3, 5]);
+  assert.deepEqual(ids("MURAKAMI"), [3, 5]);
+});
+
+test("GET /api/books?q= は著者名を大文字小文字を区別せず絞り込む", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books?q=MURAKAMI`);
+    assert.equal(res.status, 200);
+    assert.deepEqual((await res.json()).books.map((b) => b.id), [3, 5]);
+  });
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
