@@ -42,6 +42,20 @@ test("GET /api/books は一覧を返す", async () => {
   });
 });
 
+test("GET /api/books は size・page 指定でも total に全件数を返す", async () => {
+  await withApp(async (app) => {
+    const body = await (await app(`/api/books?size=2&page=2`)).json();
+    assert.equal(body.books.length, 2);
+    assert.equal(body.total, 5);
+    assert.equal(body.page, 2);
+  });
+});
+
+test("listBooks の total は q で絞った後・ページ分割前の件数", () => {
+  const result = listBooks(seedBooks(), { q: "Hobbit", size: 1 });
+  assert.equal(result.total, listBooks(seedBooks(), { q: "Hobbit" }).books.length);
+});
+
 test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   await withApp(async (app) => {
     const ok = await app(`/api/books/3`);
