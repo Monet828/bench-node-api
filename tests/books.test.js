@@ -63,3 +63,31 @@ test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", as
     assert.equal(short.status, 400);
   });
 });
+
+test("POST /api/books は 201 で新しい id の書籍を返し、GET で取れる", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 }),
+    });
+    assert.equal(res.status, 201);
+    const book = await res.json();
+    assert.equal(book.id, 6);
+    assert.equal(book.title, "Neuromancer");
+    const got = await app(`/api/books/${book.id}`);
+    assert.equal(got.status, 200);
+    assert.deepEqual(await got.json(), book);
+  });
+});
+
+test("POST /api/books は title が無ければ 400", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ author: "X" }),
+    });
+    assert.equal(res.status, 400);
+  });
+});
