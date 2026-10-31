@@ -41,6 +41,22 @@ test("GET /api/books?q= は大文字小文字を区別しない", async () => {
   });
 });
 
+test("listBooks の q は著者名の部分一致でも絞り込む", () => {
+  for (const q of ["murakami", "MURAKAMI"]) {
+    const result = listBooks(seedBooks(), { q });
+    assert.deepEqual(result.books.map((b) => b.id), [3, 5]);
+  }
+});
+
+test("GET /api/books?q=murakami は著者 Haruki Murakami の書籍を返す", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books?q=murakami`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.deepEqual(body.books.map((b) => b.author), ["Haruki Murakami", "Haruki Murakami"]);
+  });
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
