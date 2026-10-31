@@ -67,6 +67,23 @@ test("POST /api/books は書籍を登録して 201 と新しい id を返す", a
   });
 });
 
+test("POST /api/books は title・author・isbn・stock が不正なら 400", async () => {
+  await withApp(async (app) => {
+    const valid = { title: "Snow Crash", author: "Neal Stephenson", isbn: "9780553380958", stock: 5 };
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    for (const key of ["title", "author", "isbn"]) {
+      for (const value of [null, undefined, ""]) {
+        assert.equal((await post({ ...valid, [key]: value })).status, 400, `${key}=${value}`);
+      }
+    }
+    for (const value of [null, undefined, -1, 1.5, "5"]) {
+      assert.equal((await post({ ...valid, stock: value })).status, 400, `stock=${value}`);
+    }
+    assert.equal((await post({ ...valid, stock: 0 })).status, 201);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>
