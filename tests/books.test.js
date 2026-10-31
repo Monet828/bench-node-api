@@ -34,6 +34,18 @@ test("GET /api/books?q= は大文字小文字を区別しない", async () => {
   });
 });
 
+test("GET /api/books?q= は著者名でも絞り込む", async () => {
+  await withApp(async (app) => {
+    const res = await app(`/api/books?q=murakami`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.deepEqual(body.books.map((b) => b.id), [3, 5]);
+    assert.ok(body.books.every((b) => b.author === "Haruki Murakami"));
+    const upper = await (await app(`/api/books?q=KAFKA`)).json();
+    assert.ok(upper.books.some((b) => b.title === "Kafka on the Shore" && b.author === "Haruki Murakami"));
+  });
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
