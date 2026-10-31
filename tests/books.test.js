@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { adjustStock, getBook, listBooks } from "../src/books.js";
+import { DuplicateIsbnError, addBook, adjustStock, getBook, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -75,6 +75,44 @@ test("POST /api/books は不正な本文で 400", async () => {
     assert.equal((await post(JSON.stringify({ title: "x" }))).status, 400);
     assert.equal((await post("{")).status, 400);
   });
+});
+
+test("POST /api/books は不正なプロパティ値で 400 になり、件数が増えない", async () => {
+  await withApp(async (app) => {
+    const valid = { title: "T", author: "A", isbn: "9780000000001", stock: 1 };
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const bad = [
+      { ...valid, title: undefined },
+      { ...valid, author: "" },
+      { ...valid, isbn: "" },
+      { ...valid, stock: -1 },
+      { ...valid, stock: 1.5 },
+      { ...valid, stock: "3" },
+      { ...valid, stock: null },
+    ];
+    for (const body of bad) assert.equal((await post(body)).status, 400);
+    assert.equal((await (await app(`/api/books`)).json()).books.length, 5);
+  });
+});
+
+test("POST /api/books は重複 ISBN で 409 になり、件数が増えない", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const seedDup = { title: "T", author: "A", isbn: "9780547928227", stock: 1 };
+    assert.equal((await post(seedDup)).status, 409);
+    const added = { title: "N", author: "G", isbn: "9780441569595", stock: 1 };
+    assert.equal((await post(added)).status, 201);
+    assert.equal((await post(added)).status, 409);
+    assert.equal((await (await app(`/api/books`)).json()).books.length, 6);
+  });
+});
+
+test("addBook は重複 ISBN で DuplicateIsbnError", () => {
+  const books = seedBooks();
+  assert.throws(() => addBook(books, { title: "T", author: "A", isbn: "9780547928227", stock: 1 }), DuplicateIsbnError);
+  assert.equal(books.length, 5);
 });
 
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {

@@ -1,6 +1,6 @@
 import http from "node:http";
 import { seedBooks } from "./data.js";
-import { addBook, adjustStock, getBook, listBooks } from "./books.js";
+import { DuplicateIsbnError, addBook, adjustStock, getBook, listBooks } from "./books.js";
 
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
@@ -33,6 +33,7 @@ export function createHandler(books = seedBooks()) {
           return send(res, 201, addBook(books, body));
         } catch (error) {
           if (error instanceof RangeError) return send(res, 400, { error: "invalid_book", message: error.message });
+          if (error instanceof DuplicateIsbnError) return send(res, 409, { error: "duplicate_isbn", message: error.message });
           throw error;
         }
       }
