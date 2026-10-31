@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHandler } from "../src/server.js";
-import { adjustStock, getBook, listBooks } from "../src/books.js";
+import { addBook, adjustStock, DuplicateIsbnError, getBook, isIsbnDuplicate, listBooks } from "../src/books.js";
 import { seedBooks } from "../src/data.js";
 import { request } from "./helpers/app.js";
 
@@ -31,6 +31,34 @@ test("adjustStock は在庫を増減し、0 未満にはしない", () => {
   const books = seedBooks();
   assert.equal(adjustStock(books, 1, -1).stock, 3);
   assert.throws(() => adjustStock(books, 2, -1), RangeError);
+});
+
+test("isIsbnDuplicate は既存の isbn で true、無ければ false", () => {
+  const books = seedBooks();
+  assert.equal(isIsbnDuplicate(books, books[0].isbn), true);
+  assert.equal(isIsbnDuplicate(books, "0000000000000"), false);
+});
+
+test("addBook は isbn が重複すると DuplicateIsbnError を投げ、登録しない", () => {
+  const books = seedBooks();
+  const before = books.length;
+  assert.throws(
+    () => addBook(books, { title: "Dup", author: "x", isbn: books[0].isbn, stock: 1 }),
+    DuplicateIsbnError,
+  );
+  assert.equal(books.length, before);
+});
+
+test("POST /api/books は isbn が既存と重複すると 409", async () => {
+  await withApp(async (app) => {
+    const existing = (await (await app(`/api/books/1`)).json()).isbn;
+    const res = await app(`/api/books`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Dup", author: "x", isbn: existing, stock: 1 }),
+    });
+    assert.equal(res.status, 409);
+  });
 });
 
 test("GET /api/books は一覧を返す", async () => {
