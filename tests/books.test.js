@@ -52,6 +52,32 @@ test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   });
 });
 
+test("POST /api/books は登録して 201、不正なら 400、isbn が重複なら 409", async () => {
+  await withApp(async (app) => {
+    const post = (body) =>
+      app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const valid = { title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 };
+    const ok = await post(valid);
+    assert.equal(ok.status, 201);
+    assert.deepEqual(await ok.json(), { id: 6, ...valid });
+    assert.equal((await (await app(`/api/books/6`)).json()).title, "Neuromancer");
+    for (const bad of [
+      { ...valid, isbn: "1", title: "" },
+      { ...valid, isbn: "2", author: 1 },
+      { ...valid, isbn: 3 },
+      { ...valid, isbn: "4", stock: -1 },
+      { ...valid, isbn: "5", stock: 1.5 },
+      { ...valid, isbn: "6", stock: "3" },
+      [],
+    ]) {
+      assert.equal((await post(bad)).status, 400);
+    }
+    assert.equal((await post(valid)).status, 409);
+    const raw = await app(`/api/books`, { method: "POST", body: "{" });
+    assert.equal(raw.status, 400);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>

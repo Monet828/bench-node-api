@@ -27,3 +27,23 @@ export function adjustStock(books, id, delta) {
   book.stock += delta;
   return book;
 }
+
+/** 書籍の入力を検べる。問題があれば理由の文字列、無ければ null。 */
+export function validateNewBook(input) {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) return "本文はオブジェクト";
+  for (const key of ["title", "author", "isbn"]) {
+    if (typeof input[key] !== "string" || input[key].trim() === "") return `${key} は空でない文字列`;
+  }
+  if (!Number.isInteger(input.stock) || input.stock < 0) return "stock は 0 以上の整数";
+  return null;
+}
+
+/** 書籍を登録して返す。isbn が既にあれば RangeError。 */
+export function addBook(books, input) {
+  const isbn = input.isbn.trim();
+  if (books.some((b) => b.isbn === isbn)) throw new RangeError("isbn が重複");
+  const id = books.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+  const book = { id, title: input.title.trim(), author: input.author.trim(), isbn, stock: input.stock };
+  books.push(book);
+  return book;
+}

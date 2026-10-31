@@ -1,6 +1,6 @@
 import http from "node:http";
 import { seedBooks } from "./data.js";
-import { adjustStock, getBook, listBooks } from "./books.js";
+import { addBook, adjustStock, getBook, listBooks, validateNewBook } from "./books.js";
 
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
@@ -21,6 +21,22 @@ export function createHandler(books = seedBooks()) {
     try {
       if (req.method === "GET" && url.pathname === "/api/books") {
         return send(res, 200, listBooks(books, Object.fromEntries(url.searchParams)));
+      }
+      if (req.method === "POST" && url.pathname === "/api/books") {
+        let body;
+        try {
+          body = await readJson(req);
+        } catch {
+          return send(res, 400, { error: "invalid_json" });
+        }
+        const problem = validateNewBook(body);
+        if (problem) return send(res, 400, { error: "invalid_book", message: problem });
+        try {
+          return send(res, 201, addBook(books, body));
+        } catch (error) {
+          if (error instanceof RangeError) return send(res, 409, { error: "duplicate_isbn", message: error.message });
+          throw error;
+        }
       }
       const one = url.pathname.match(/^\/api\/books\/(\d+)$/);
       if (req.method === "GET" && one) {
