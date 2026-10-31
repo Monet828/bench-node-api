@@ -52,6 +52,31 @@ test("GET /api/books/:id は 1 冊を返し、無ければ 404", async () => {
   });
 });
 
+test("POST /api/books は 201 で登録し、詳細と一覧に反映される", async () => {
+  await withApp(async (app) => {
+    const input = { title: "Neuromancer", author: "William Gibson", isbn: "9780441569595", stock: 5 };
+    const res = await app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) });
+    assert.equal(res.status, 201);
+    const created = await res.json();
+    assert.deepEqual({ ...created, id: undefined }, { ...input, id: undefined });
+    assert.equal(created.id, 6);
+    const one = await app(`/api/books/${created.id}`);
+    assert.equal(one.status, 200);
+    assert.deepEqual(await one.json(), created);
+    const list = await (await app(`/api/books`)).json();
+    assert.equal(list.books.length, 6);
+    assert.ok(list.books.some((b) => b.id === created.id));
+  });
+});
+
+test("POST /api/books は不正な本文で 400", async () => {
+  await withApp(async (app) => {
+    const post = (body) => app(`/api/books`, { method: "POST", headers: { "content-type": "application/json" }, body });
+    assert.equal((await post(JSON.stringify({ title: "x" }))).status, 400);
+    assert.equal((await post("{")).status, 400);
+  });
+});
+
 test("POST /api/books/:id/stock は在庫を変え、足りなければ 400", async () => {
   await withApp(async (app) => {
     const post = (id, body) =>
