@@ -18,6 +18,19 @@ export function getBook(books, id) {
   return books.find((b) => b.id === id) ?? null;
 }
 
+/** 書籍を登録し、新しい id を付けて返す。title・author は必須、stock は省略で 0。不正なら RangeError。 */
+export function addBook(books, input = {}) {
+  const { title, author, isbn = "", stock = 0 } = input ?? {};
+  if (typeof title !== "string" || title === "") throw new RangeError("title は必須");
+  if (typeof author !== "string" || author === "") throw new RangeError("author は必須");
+  if (typeof isbn !== "string") throw new RangeError("isbn は文字列");
+  if (!Number.isInteger(stock) || stock < 0) throw new RangeError("stock は 0 以上の整数");
+  const id = books.reduce((max, b) => Math.max(max, b.id), 0) + 1;
+  const book = { id, title, author, isbn, stock };
+  books.push(book);
+  return book;
+}
+
 /** 在庫を delta だけ増減する。無ければ null。在庫は 0 未満にならない。 */
 export function adjustStock(books, id, delta) {
   const book = getBook(books, id);
