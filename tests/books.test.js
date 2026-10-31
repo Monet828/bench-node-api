@@ -23,6 +23,26 @@ test("listBooks は q で書名を絞り込む", () => {
   assert.deepEqual(result.books.map((b) => b.id), [1]);
 });
 
+test("listBooks の total はページング前の全件数", () => {
+  const paged = listBooks(seedBooks(), { size: 2, page: 1 });
+  assert.equal(paged.books.length, 2);
+  assert.equal(paged.total, 5);
+  const last = listBooks(seedBooks(), { size: 2, page: 3 });
+  assert.equal(last.books.length, 1);
+  assert.equal(last.total, 5);
+  const filtered = listBooks(seedBooks(), { q: "the", size: 1, page: 1 });
+  assert.equal(filtered.books.length, 1);
+  assert.equal(filtered.total, 3);
+});
+
+test("GET /api/books の total はページング前の全件数", async () => {
+  await withApp(async (app) => {
+    const body = await (await app(`/api/books?size=2&page=1`)).json();
+    assert.equal(body.books.length, 2);
+    assert.equal(body.total, 5);
+  });
+});
+
 test("getBook は無い id で null を返す", () => {
   assert.equal(getBook(seedBooks(), 99), null);
 });
