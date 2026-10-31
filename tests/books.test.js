@@ -91,3 +91,31 @@ test("POST /api/books は title が無ければ 400", async () => {
     assert.equal(res.status, 400);
   });
 });
+
+test("POST /api/books は title・author・isbn・stock が不正なら 400 で、書籍は増えない", async () => {
+  await withApp(async (app) => {
+    const valid = { title: "T", author: "A", isbn: "123", stock: 1 };
+    const bad = [
+      { ...valid, title: undefined },
+      { ...valid, title: "" },
+      { ...valid, author: undefined },
+      { ...valid, author: "" },
+      { ...valid, isbn: undefined },
+      { ...valid, isbn: "" },
+      { ...valid, stock: undefined },
+      { ...valid, stock: -1 },
+      { ...valid, stock: 1.5 },
+      { ...valid, stock: "3" },
+    ];
+    for (const body of bad) {
+      const res = await app(`/api/books`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      assert.equal(res.status, 400, JSON.stringify(body));
+    }
+    const list = await (await app(`/api/books`)).json();
+    assert.equal(list.books.length, 5);
+  });
+});
